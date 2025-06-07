@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -14,12 +13,20 @@ const PORT = process.env.PORT || 10000;
 
 app.get('/clone', async (req, res) => {
   const url = req.query.url;
-  if (!url) return res.status(400).send('URL não fornecida.');
+
+  if (!url) {
+    return res.status(400).send('URL não fornecida.');
+  }
 
   try {
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage',
+      ],
     });
 
     const page = await browser.newPage();
@@ -27,6 +34,10 @@ app.get('/clone', async (req, res) => {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
       '(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
     );
+
+    await page.setExtraHTTPHeaders({
+      'accept-language': 'pt-BR,pt;q=0.9',
+    });
 
     await page.goto(url, {
       waitUntil: 'networkidle2',
@@ -41,7 +52,7 @@ app.get('/clone', async (req, res) => {
     await browser.close();
     return res.download(filePath);
   } catch (error) {
-    console.error('Erro ao clonar página:', error);
+    console.error('Erro ao clonar página COMPLETO:', error);
     return res.status(500).send('Erro ao clonar página. Veja o console para mais detalhes.');
   }
 });
