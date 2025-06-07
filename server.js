@@ -1,41 +1,41 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
-
 const puppeteer = require('puppeteer-core');
 const chromium = require('chrome-aws-lambda');
 
 const app = express();
-app.use(cors({ origin: '*' }));
+app.use(cors());
 
 const PORT = process.env.PORT || 10000;
 
 app.get('/clone', async (req, res) => {
   const url = req.query.url;
-  if (!url) return res.status(400).send('URL não fornecida.');
+
+  if (!url) return res.status(400).send('URL é obrigatória');
+
+  let browser = null;
 
   try {
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath,
-      headless: chromium.headless,
+      headless: chromium.headless
     });
 
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
 
-    const html = await page.content();
-    const fileName = `pagina_clonada_${Date.now()}.html`;
-    const filePath = path.join(__dirname, 'utils', fileName);
-    fs.writeFileSync(filePath, html);
+    const content = await page.content();
+    const filename = 'pagina-clonada.html';
 
-    await browser.close();
-    return res.download(filePath);
+    res.setHeader('Content-disposition', `attachment; filename=${filename}`);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(content);
   } catch (error) {
-    console.error('Erro ao clonar página:', error);
-    return res.status(500).send('Erro ao clonar página. Veja o console para mais detalhes.');
+    console.error('Erro detalhado:', error);
+    res.status(500).send('Erro ao clonar página. Veja o console para mais detalhes.');
+  } finally {
+    if (browser) await browser.close();
   }
 });
 
