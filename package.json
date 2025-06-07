@@ -8,8 +8,12 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "puppeteer": "^21.3.8",
+    "puppeteer": "^21.11.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "optionalDependencies": {
+    "chrome-aws-lambda": "^10.1.0",
+    "puppeteer-core": "^10.4.0"
   }
 }
