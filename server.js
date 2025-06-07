@@ -1,17 +1,16 @@
 // server.js
-import express from 'express';
-import cors from 'cors';
-import fs from 'fs';
-import path from 'path';
-import chromium from 'chrome-aws-lambda';
-import puppeteer from 'puppeteer-core';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import pptrExtra from 'puppeteer-extra';
+const express       = require('express');
+const cors          = require('cors');
+const fs            = require('fs');
+const path          = require('path');
+const chromium      = require('chrome-aws-lambda');
+const puppeteer     = require('puppeteer-core');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 
-pptrExtra.use(StealthPlugin());
+puppeteer.use(StealthPlugin());
 
 const app = express();
-app.use(cors({ origin: '*' }));
+app.use(cors());
 
 const PORT = process.env.PORT || 3001;
 
@@ -21,7 +20,7 @@ app.get('/clone', async (req, res) => {
 
   let browser = null;
   try {
-    browser = await pptrExtra.launch({
+    browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath,
@@ -29,28 +28,20 @@ app.get('/clone', async (req, res) => {
     });
 
     const page = await browser.newPage();
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-      '(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
-    );
-
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-    const html = await page.content();
 
+    const html     = await page.content();
     const fileName = `pagina_clonada_${Date.now()}.html`;
-    const filePath = path.join(process.cwd(), 'utils', fileName);
+    const filePath = path.join(__dirname, 'utils', fileName);
     fs.writeFileSync(filePath, html);
 
-    res.download(filePath, fileName, err => {
-      if (err) console.error('Erro no download:', err);
-      // opcional: fs.unlinkSync(filePath);
-    });
+    await browser.close();
+    return res.download(filePath);
 
-  } catch (err) {
-    console.error('Erro ao clonar página:', err);
-    res.status(500).send('Erro ao clonar página. Veja o log do servidor.');
-  } finally {
+  } catch (error) {
     if (browser) await browser.close();
+    console.error('Erro ao clonar página:', error);
+    return res.status(500).send('Erro ao clonar página. Veja o console.');
   }
 });
 
