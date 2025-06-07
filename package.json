@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "postinstall": "puppeteer install"
+    "postinstall": "echo Skipping puppeteer install"
   },
   "dependencies": {
     "cors": "^2.8.5",
